@@ -25,8 +25,8 @@ while len(data) > 0:
 	stereo_data = np.zeros([CHUNK,2])
 	for i in range(int(len(audio_data)/2)):
 		x = i*2
-		stereo_data[i,0] = audio_data[x]
-		stereo_data[i,1] = 0#audio_data[x+1]
+		stereo_data[i,0] = -audio_data[x]
+		stereo_data[i,1] = audio_data[x]
 	
 	# write audio data to output
 	out_data = np.array(stereo_data, dtype=DTYPE)
