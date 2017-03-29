@@ -9,7 +9,7 @@ import numpy as np
 
 CHUNK = 1024
 DTYPE = np.int16
-wf = wave.open(sys.argv[1], 'rb')
+wf = wave.open('w.wav', 'rb')
 
 # begin audio stream
 p = pyaudio.PyAudio()
@@ -25,8 +25,8 @@ while len(data) > 0:
 	stereo_data = np.zeros([CHUNK,2])
 	for i in range(CHUNK):
 		x = i*2
-		stereo_data[i,0] = 0#audio_data[x]
-		stereo_data[i,1] = audio_data[x+1]
+		stereo_data[i,0] = audio_data[x]
+		stereo_data[i,1] = 0#audio_data[x+1]
 	
 	# write audio data to output
 	out_data = np.array(stereo_data, dtype=DTYPE)
