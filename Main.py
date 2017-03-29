@@ -23,7 +23,7 @@ while len(data) > 0:
 	audio_data = np.fromstring(data, dtype=DTYPE)
 		
 	stereo_data = np.zeros([CHUNK,2])
-	for i in range(CHUNK):
+	for i in range(int(len(audio_data)/2)):
 		x = i*2
 		stereo_data[i,0] = audio_data[x]
 		stereo_data[i,1] = 0#audio_data[x+1]
