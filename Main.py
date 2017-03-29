@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 CHUNK = 1024
-MAX_INT = 32768.0
+DTYPE = np.int16
 wf = wave.open(sys.argv[1], 'rb')
 
 # begin audio stream
@@ -16,27 +16,27 @@ p = pyaudio.PyAudio()
 stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),channels=2,rate=wf.getframerate(),output=True)
 
 # read data
-to_plot = []
-n = 15
 data = wf.readframes(CHUNK)
 
-while (n>0):
+while len(data) > 0:
+	# read from file, convert to usable form
+	audio_data = np.fromstring(data, dtype=DTYPE)
+		
+	stereo_data = np.zeros([CHUNK,2])
+	for i in range(CHUNK):
+		x = i*2
+		stereo_data[i,0] = 0#audio_data[x]
+		stereo_data[i,1] = audio_data[x+1]
+	
+	# write audio data to output
+	out_data = np.array(stereo_data, dtype=DTYPE)
+	string_audio_data = out_data.tostring()
+	stream.write(string_audio_data, CHUNK)
+	
+	# fetch new audio data
 	data = wf.readframes(CHUNK)
-	audio_data = (np.fromstring(data, dtype=np.int16)) / MAX_INT
-	for i in range(len(audio_data)):
-		to_plot.append(audio_data[i])
-	n -= 1
 
-# play stream (3)
-#while len(data) > 0:
-#    stream.write(data)
-#	data = wf.readframes(CHUNK)
-
-	
-plt.plot(to_plot)
-plt.show()
-	
-# Clean up
+# cleanup
 stream.stop_stream()
 stream.close()
 p.terminate()
