@@ -65,6 +65,7 @@ def plot():
 	delay = 0
 	total_energy = 0
 	FFT_memory = [] #book-keeping structure to implement delays
+	max_memory = 10
 		
 	# read data from wav file
 	plot_data = []
@@ -77,9 +78,14 @@ def plot():
 		audio_data = np.fromstring(data, dtype=DTYPE) / MAX
 		FFT = np.fft.fft(audio_data)
 		FFT_memory.append(FFT)
+		if (len(FFT_memory)>max_memory):
+			FFT_memory = FFT_memory[1:]
 		
-		# cancel the noise signal
-		synth = np.fft.ifft(FFT)
+		# cancel signal
+		if (len(FFT_memory)<delay):
+			synth = np.fft.ifft(np.zeros(len(FFT))))
+		else:
+			synth = np.fft.ifft(FFT_memory[delay])
 		for i in range(int(len(audio_data)/2)):
 			a = audio_data[i] # actual 
 			b = -synth[i]
