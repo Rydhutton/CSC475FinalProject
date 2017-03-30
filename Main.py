@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 
-CHUNK = 1024
+CHUNK = 500
 MAX = 32768.0
 DTYPE = np.int16
 
@@ -62,11 +62,10 @@ def plot():
 	stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),channels=2,rate=wf.getframerate(),output=True)
 
 	total_energy = 0
-	avg_fft = np.array([0])
-	last_fft_instace = np.array([0])
 	
 	# read data from wav file
 	plot_data = []
+	plot_inv = []
 	plot_sum = []
 	data = wf.readframes(CHUNK)
 	while len(data) > 0:
@@ -76,12 +75,13 @@ def plot():
 		
 		# compute frequencies of incoming data
 		freq_data = np.fft.fft(audio_data)
-		
+		synth = np.fft.ifft(freq_data)
 		
 		for i in range(int(len(audio_data)/2)):
 			a = audio_data[i]
-			b = 0
+			b = -synth[i]
 			plot_data.append(a) #left speaker	
+			plot_inv.append(-synth[i])
 			plot_sum.append(a+b)
 			total_energy += abs(a+b)
 		# fetch new audio data
@@ -95,7 +95,7 @@ def plot():
 	# plot result
 	print('total energy:'+str(total_energy))
 	plt.figure(figsize=(15,4))
-	plt.plot(plot_data, 'b', plot_sum, 'r')
+	plt.plot(plot_data, 'b', plot_sum, 'r', plot_inv, 'y')
 	plt.show()
 
 def sin_wave_ex():
