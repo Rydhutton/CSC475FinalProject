@@ -7,8 +7,9 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+from scipy import *
 
-CHUNK = 500
+CHUNK = 1024
 MAX = 32768.0
 DTYPE = np.int16
 
@@ -61,8 +62,10 @@ def plot():
 	p = pyaudio.PyAudio()
 	stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),channels=2,rate=wf.getframerate(),output=True)
 
+	delay = 0
 	total_energy = 0
-	
+	FFT_memory = [] #book-keeping structure to implement delays
+		
 	# read data from wav file
 	plot_data = []
 	plot_inv = []
@@ -72,21 +75,24 @@ def plot():
 	
 		# read from file, convert to usable form
 		audio_data = np.fromstring(data, dtype=DTYPE) / MAX
+		FFT = np.fft.fft(audio_data)
+		FFT_memory.append(FFT)
 		
-		# compute frequencies of incoming data
-		freq_data = np.fft.fft(audio_data)
-		synth = np.fft.ifft(freq_data)
-		
+		# cancel the noise signal
+		synth = np.fft.ifft(FFT)
 		for i in range(int(len(audio_data)/2)):
-			a = audio_data[i]
+			a = audio_data[i] # actual 
 			b = -synth[i]
-			plot_data.append(a) #left speaker	
+			plot_data.append(a)	
 			plot_inv.append(-synth[i])
 			plot_sum.append(a+b)
 			total_energy += abs(a+b)
 		# fetch new audio data
+		
 		data = wf.readframes(CHUNK)
 
+	print(len(FFT_memory))
+		
 	# cleanup
 	stream.stop_stream()
 	stream.close()
