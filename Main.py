@@ -65,6 +65,9 @@ def plot():
 	energy_before = 0
 	energy_after = 0
 	lastFFT = None
+	#TODO use averages 
+	#TODO explain lowfreq [show example of high freq]
+	#TODO plot energy over time
 	
 	# read data from wav file
 	plot_data = []
