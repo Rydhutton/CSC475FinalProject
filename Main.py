@@ -9,11 +9,14 @@ import numpy as np
 import math
 
 CHUNK = 1024
+MAX = 32768.0
 DTYPE = np.int16
 
 def main():
 	# determine launch context
-	if (sys.argv[1] == 'sin'):
+	if (sys.argv[1] == 'plot'):
+		plot()
+	elif (sys.argv[1] == 'sin'):
 		sin_wave_ex()
 	elif (sys.argv[1] == 'di'):
 		destructive_interference_demo()
@@ -50,6 +53,50 @@ def destructive_interference_demo():
 	stream.stop_stream()
 	stream.close()
 	p.terminate()
+
+def plot():
+	wf = wave.open(sys.argv[2], 'rb')
+
+	# begin audio stream
+	p = pyaudio.PyAudio()
+	stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),channels=2,rate=wf.getframerate(),output=True)
+
+	total_energy = 0
+	avg_fft = np.array([0])
+	last_fft_instace = np.array([0])
+	
+	# read data from wav file
+	plot_data = []
+	plot_sum = []
+	data = wf.readframes(CHUNK)
+	while len(data) > 0:
+	
+		# read from file, convert to usable form
+		audio_data = np.fromstring(data, dtype=DTYPE) / MAX
+		
+		# compute frequencies of incoming data
+		freq_data = np.fft.fft(audio_data)
+		
+		
+		for i in range(int(len(audio_data)/2)):
+			a = audio_data[i]
+			b = 0
+			plot_data.append(a) #left speaker	
+			plot_sum.append(a+b)
+			total_energy += abs(a+b)
+		# fetch new audio data
+		data = wf.readframes(CHUNK)
+
+	# cleanup
+	stream.stop_stream()
+	stream.close()
+	p.terminate()	
+		
+	# plot result
+	print('total energy:'+str(total_energy))
+	plt.figure(figsize=(15,4))
+	plt.plot(plot_data, 'b', plot_sum, 'r')
+	plt.show()
 
 def sin_wave_ex():
 
