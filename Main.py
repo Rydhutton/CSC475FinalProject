@@ -9,7 +9,7 @@ import numpy as np
 import math
 from scipy import *
 
-CHUNK = 1024
+CHUNK = 2048
 MAX = 32768.0
 DTYPE = np.int16
 
@@ -66,6 +66,7 @@ def plot():
 	total_energy = 0
 	FFT_memory = [] #book-keeping structure to implement delays
 	max_memory = 10
+	n_avg = 1
 		
 	# read data from wav file
 	plot_data = []
@@ -82,10 +83,15 @@ def plot():
 			FFT_memory = FFT_memory[1:]
 		
 		# cancel signal
-		if (len(FFT_memory)<delay):
-			synth = np.fft.ifft(np.zeros(len(FFT))))
+		if (len(FFT_memory)<1): #delay+n_avg
+			synth = np.fft.ifft(np.zeros(len(FFT)))
 		else:
-			synth = np.fft.ifft(FFT_memory[delay])
+			S = FFT_memory[ ((len(FFT_memory)-1)-delay) ]
+			for i in range(1,n_avg):
+				S += FFT_memory[ ((len(FFT_memory)-1)-delay) -i]
+			S = S/n_avg
+			synth = np.fft.ifft(S)
+		
 		for i in range(int(len(audio_data)/2)):
 			a = audio_data[i] # actual 
 			b = -synth[i]
@@ -93,11 +99,9 @@ def plot():
 			plot_inv.append(-synth[i])
 			plot_sum.append(a+b)
 			total_energy += abs(a+b)
+			
 		# fetch new audio data
-		
 		data = wf.readframes(CHUNK)
-
-	print(len(FFT_memory))
 		
 	# cleanup
 	stream.stop_stream()
