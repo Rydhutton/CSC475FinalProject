@@ -9,7 +9,7 @@ import numpy as np
 import math
 from scipy import *
 
-CHUNK = 2048
+CHUNK = 16384
 MAX = 32768.0
 DTYPE = np.int16
 
@@ -61,13 +61,11 @@ def plot():
 	# begin audio stream
 	p = pyaudio.PyAudio()
 	stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),channels=2,rate=wf.getframerate(),output=True)
-
-	delay = 0
-	total_energy = 0
-	FFT_memory = [] #book-keeping structure to implement delays
-	max_memory = 10
-	n_avg = 1
 		
+	energy_before = 0
+	energy_after = 0
+	lastFFT = None
+	
 	# read data from wav file
 	plot_data = []
 	plot_inv = []
@@ -77,31 +75,29 @@ def plot():
 	
 		# read from file, convert to usable form
 		audio_data = np.fromstring(data, dtype=DTYPE) / MAX
-		FFT = np.fft.fft(audio_data)
-		FFT_memory.append(FFT)
-		if (len(FFT_memory)>max_memory):
-			FFT_memory = FFT_memory[1:]
 		
-		# cancel signal
-		if (len(FFT_memory)<1): #delay+n_avg
-			synth = np.fft.ifft(np.zeros(len(FFT)))
+		if lastFFT==None:
+			synth = np.fft.ifft(np.fft.fft(audio_data))
 		else:
-			S = FFT_memory[ ((len(FFT_memory)-1)-delay) ]
-			for i in range(1,n_avg):
-				S += FFT_memory[ ((len(FFT_memory)-1)-delay) -i]
-			S = S/n_avg
-			synth = np.fft.ifft(S)
+			synth = np.fft.ifft(lastFFT)
 		
 		for i in range(int(len(audio_data)/2)):
 			a = audio_data[i] # actual 
-			b = -synth[i]
+			b = -synth[i] * 1.0
 			plot_data.append(a)	
 			plot_inv.append(-synth[i])
 			plot_sum.append(a+b)
-			total_energy += abs(a+b)
-			
+			if (lastFFT==None):
+				eatpoo = True
+			else:
+				energy_before += abs(a)
+				energy_after += abs(a+b)
+		
 		# fetch new audio data
+		lastFFT = np.fft.fft(audio_data)
 		data = wf.readframes(CHUNK)
+		
+	print('energy ratio:'+str(energy_after/energy_before))
 		
 	# cleanup
 	stream.stop_stream()
@@ -109,9 +105,8 @@ def plot():
 	p.terminate()	
 		
 	# plot result
-	print('total energy:'+str(total_energy))
 	plt.figure(figsize=(15,4))
-	plt.plot(plot_data, 'b', plot_sum, 'r', plot_inv, 'y')
+	plt.plot(plot_data, 'r', plot_sum, 'b')#, plot_inv, 'y'
 	plt.show()
 
 def sin_wave_ex():
