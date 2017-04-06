@@ -36,7 +36,7 @@ def calculate():
 	negative_feedback_threshold = 0.01
 	negative_feedback_gain_rate = 0.05
 	linear_interpolate = True
-	anti_signal_strength = 0.75
+	anti_signal_strength = 0.79
 	n_averaging_set = 3
 	delay = 1
 	
