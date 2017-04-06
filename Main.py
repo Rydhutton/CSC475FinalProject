@@ -9,11 +9,7 @@ import numpy as np
 import math
 from scipy import *
 
-#CHUNK = 4096
 CHUNK = 8192
-#CHUNK = 16384
-#CHUNK = 32768
-#CHUNK = 65536
 MAX = 32768.0
 
 def main():
@@ -36,6 +32,9 @@ def calculate():
 	stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),channels=2,rate=wf.getframerate(),output=True)
 		
 	# config
+	negative_feedback = True
+	negative_feedback_threshold = 0.01
+	negative_feedback_gain_rate = 0.05
 	linear_interpolate = True
 	anti_signal_strength = 0.75
 	n_averaging_set = 3
@@ -50,9 +49,8 @@ def calculate():
 	energy_before = 0
 	energy_after = 0	
 	data = wf.readframes(CHUNK)
+	last_chunk_intensity = 1
 	T = delay #hacky fix
-	
-	#todo:negative feedback 
 	
 	# initialize
 	for i in range(delay):
@@ -104,6 +102,7 @@ def calculate():
 		synth = np.fft.ifft(fin_freq)
 		
 		# calc results, fetch new audio data
+		chunk_intensity = 0
 		for i in range(CHUNK):
 			a = raw_data[i]
 			b = synth[i] * anti_signal_strength
@@ -115,6 +114,13 @@ def calculate():
 				if (a!=0): #hacky fix
 					energy_before += abs(a)
 					energy_after += abs(c)
+			chunk_intensity += abs(c)
+		if (negative_feedback):
+			if (chunk_intensity > last_chunk_intensity*(1+negative_feedback_threshold)):
+				anti_signal_strength -= negative_feedback_gain_rate
+			elif (chunk_intensity < last_chunk_intensity*(1-negative_feedback_threshold)):
+				anti_signal_strength += negative_feedback_gain_rate
+		last_chunk_intensity = chunk_intensity
 		if (T > 0):
 			T -= 1
 		data = wf.readframes(CHUNK)
