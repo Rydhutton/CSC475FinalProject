@@ -9,18 +9,24 @@ import numpy as np
 import math
 from scipy import *
 
+#CHUNK = 8192
 CHUNK = 16384
 MAX = 32768.0
 DTYPE = np.int16
 
 def main():
 	# determine launch context
-	if (sys.argv[1] == 'plot'): # usage = "python Main.py plot something.wav"
-		plot()
-	elif (sys.argv[1] == 'sin'): # usage = "python Main.py sin"
+	# "python Main.py something.wav" = calc most-recent-frame
+	# optional -- add "plot" at end of command for visual plot
+	# "python Main.py di something.wav" = 2-speaker destructive interference demo
+	# "python Main.py sin" = test sine wave output
+	
+	if (sys.argv[1] == 'sin'): 
 		sin_wave_ex()
-	elif (sys.argv[1] == 'di'): # usage = "python Main.py di something.wav"
+	elif (sys.argv[1] == 'di'): 
 		destructive_interference_demo()
+	else:
+		calculate() 
 		
 def destructive_interference_demo():
 	wf = wave.open(sys.argv[2], 'rb')
@@ -80,8 +86,8 @@ def sin_wave_ex():
 	stream.close()
 	p.terminate()
 
-def plot():
-	wf = wave.open(sys.argv[2], 'rb')
+def calculate():
+	wf = wave.open(sys.argv[1], 'rb')
 
 	# begin audio stream
 	p = pyaudio.PyAudio()
@@ -89,43 +95,80 @@ def plot():
 		
 	energy_before = 0
 	energy_after = 0
-	lastFFT = None
+	mrf_FFT = None
+	# config - n_CHUNK, delay, sample_rate
+		
+	#TODO most-recent-frame
+	#TODO mean-average
+	#TODO weighted-average (linear)
 	
-	#TODO use averages 
+	#TODO negative-feedback mechanism
+	#TODO output delay?
 	#TODO plot energy over time
 	
-	# read data from wav file
+	a = 5 + 10j
+	b = a / 1
+	print (b)
+	
+	# config
+	n_averaging_set = 1
+	delay = 1
+	
+	# vars
 	plot_data = []
 	plot_sum = []
+	delayed_data = []
+	averaging_set = []
 	data = wf.readframes(CHUNK)
-	c = 0
+	T = delay
+	
+	# initialize
+	for i in range(delay):
+		delayed_data.append( np.zeros(CHUNK) )
+			
+	# read data from wav file
 	while len(data) > 0:
 	
-		# read from file, convert to usable form
-		audio_data = np.fromstring(data, dtype=DTYPE) / MAX
+		# read from file (stereo data), convert to usable form
+		raw_data = np.zeros(CHUNK)
+		wav_data = np.fromstring(data, dtype=DTYPE) / MAX
+		for i in range(int(len(wav_data)/2)):
+			raw_data[i] = wav_data[i*2]
+		print(raw_data[0])
+			
+		# extract frequency data
+		FFT_data = np.fft.fft(raw_data)
+		delayed_data.append(FFT_data)
 		
-		if lastFFT==None:
-			synth = np.fft.ifft(np.fft.fft(audio_data))
-		else:
-			synth = np.fft.ifft(lastFFT)
+		# "recieve" delayed frequency data
+		fresh_data = delayed_data.pop(0)
+		averaging_set.append(fresh_data)
+		if (len(averaging_set) > n_averaging_set):
+			averaging_set.pop(0)
+			
+		# synthesize anti-signal
+		AVG_FFT = np.zeros(CHUNK, dtype=complex)
+		for i in range(len(averaging_set)):
+			for j in range(CHUNK):
+				AVG_FFT[j] += averaging_set[i][j]
+		for j in range(CHUNK):
+			AVG_FFT[j] = AVG_FFT[j] / len(averaging_set)
+		synth = np.fft.ifft(AVG_FFT)
 		
-		for i in range(int(len(audio_data)/2)):
-			a = audio_data[i] # actual 
+		# calc results, fetch new audio data
+		for i in range(CHUNK):
+			a = raw_data[i]
 			b = -synth[i] * 1.0
 			plot_data.append(a)	
 			plot_sum.append(a+b)
-			if (lastFFT==None):
-				eatpoo = True
+			if (T == 0): 
+				if (a!=0): #hacky fix to "trailing zeros" problem
+					energy_before += abs(a)
+					energy_after += abs(a+b)
 			else:
-				energy_before += abs(a)
-				energy_after += abs(a+b)
-		
-		# fetch new audio data
-		c += 1
-		lastFFT = np.fft.fft(audio_data)
+				T -= 1
 		data = wf.readframes(CHUNK)
 		
-	print(c)
 	print('energy ratio:'+str(energy_after/energy_before))
 		
 	# cleanup
@@ -134,9 +177,12 @@ def plot():
 	p.terminate()	
 		
 	# plot result
-	plt.figure(figsize=(15,4))
-	plt.plot(plot_data, 'r', plot_sum, 'b')#, plot_inv, 'y'
-	plt.show()
+	if (len(sys.argv) > 2):
+		if (sys.argv[2] == "plot"):
+			plt.figure(figsize=(15,4))
+			plt.plot(plot_data, 'b', plot_sum, 'r')
+			plt.show()
+
 	
 if __name__ == "__main__":
     main()
