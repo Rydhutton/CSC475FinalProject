@@ -15,11 +15,12 @@ DTYPE = np.int16
 
 def main():
 	# determine launch context
-	if (sys.argv[1] == 'plot'):
+	
+	if (sys.argv[1] == 'plot'): # usage = "python Main.py plot something.wav"
 		plot()
-	elif (sys.argv[1] == 'sin'):
+	elif (sys.argv[1] == 'sin'): # usage = "python Main.py sin"
 		sin_wave_ex()
-	elif (sys.argv[1] == 'di'):
+	elif (sys.argv[1] == 'di'): # usage = "python Main.py di something.wav"
 		destructive_interference_demo()
 		
 def destructive_interference_demo():
@@ -54,6 +55,31 @@ def destructive_interference_demo():
 	stream.stop_stream()
 	stream.close()
 	p.terminate()
+	
+def sin_wave_ex():
+
+	# begin audio stream
+	p = pyaudio.PyAudio()
+	stream = p.open(format=p.get_format_from_width(2),channels=2,rate=11025,output=True)
+	
+	# write sine wave data
+	i  = 0.0
+	while True:
+		stereo_data = np.zeros([CHUNK,2])
+		for n in range(CHUNK):
+			stereo_data[n,0] = math.sin(i/10.0)*30000 #left speaker
+			stereo_data[n,1] = math.sin(i/10.0)*30000 #right speaker
+			i+=1.0
+	
+		# write audio data to output
+		out_data = np.array(stereo_data, dtype=DTYPE)
+		string_audio_data = out_data.tostring()
+		stream.write(string_audio_data, CHUNK)
+	
+	# cleanup
+	stream.stop_stream()
+	stream.close()
+	p.terminate()
 
 def plot():
 	wf = wave.open(sys.argv[2], 'rb')
@@ -66,7 +92,6 @@ def plot():
 	energy_after = 0
 	lastFFT = None
 	#TODO use averages 
-	#TODO explain lowfreq [show example of high freq]
 	#TODO plot energy over time
 	
 	# read data from wav file
@@ -109,33 +134,8 @@ def plot():
 		
 	# plot result
 	plt.figure(figsize=(15,4))
-	plt.plot(plot_data, 'r', plot_sum, 'b')#, plot_inv, 'y'
+	plt.plot(plot_data, 'r', plot_sum, 'b', plot_inv, 'y')#, plot_inv, 'y'
 	plt.show()
-
-def sin_wave_ex():
-
-	# begin audio stream
-	p = pyaudio.PyAudio()
-	stream = p.open(format=p.get_format_from_width(2),channels=2,rate=11025,output=True)
-	
-	i  = 0.0
-	while True:
-	
-		stereo_data = np.zeros([CHUNK,2])
-		for n in range(CHUNK):
-			stereo_data[n,0] = math.sin(i/10.0)*30000 #left speaker
-			stereo_data[n,1] = math.sin(i/10.0)*30000 #right speaker
-			i+=1.0
-	
-		# write audio data to output
-		out_data = np.array(stereo_data, dtype=DTYPE)
-		string_audio_data = out_data.tostring()
-		stream.write(string_audio_data, CHUNK)
-	
-	# cleanup
-	stream.stop_stream()
-	stream.close()
-	p.terminate()
 	
 if __name__ == "__main__":
     main()
