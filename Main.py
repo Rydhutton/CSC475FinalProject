@@ -12,7 +12,6 @@ from scipy import *
 #CHUNK = 8192
 CHUNK = 16384
 MAX = 32768.0
-DTYPE = np.int16
 
 def main():
 	# determine launch context
@@ -48,11 +47,8 @@ def calculate():
 	#TODO output delay?
 	#TODO plot energy over time
 	
-	a = 5 + 10j
-	b = a / 1
-	print (b)
-	
 	# config
+	anti_signal_strength = 1.0
 	n_averaging_set = 1
 	delay = 1
 	
@@ -62,7 +58,7 @@ def calculate():
 	delayed_data = []
 	averaging_set = []
 	data = wf.readframes(CHUNK)
-	T = delay+1
+	T = delay #hacky fix
 	
 	# initialize
 	for i in range(delay):
@@ -73,7 +69,7 @@ def calculate():
 	
 		# read from file (stereo data), convert to usable form
 		raw_data = np.zeros(CHUNK)
-		wav_data = np.fromstring(data, dtype=DTYPE) / MAX
+		wav_data = np.fromstring(data, dtype=np.int16) / MAX
 		for i in range(int(len(wav_data)/2)):
 			raw_data[i] = wav_data[i*2]
 			
@@ -99,11 +95,11 @@ def calculate():
 		# calc results, fetch new audio data
 		for i in range(CHUNK):
 			a = raw_data[i]
-			b = -synth[i] * 1.0
+			b = -synth[i] * anti_signal_strength
 			plot_data.append(a)	
 			plot_sum.append(a+b)
 			if (T == 0): 
-				if (a!=0): #hacky fix to "trailing zeros" problem
+				if (a!=0): #hacky fix
 					energy_before += abs(a)
 					energy_after += abs(a+b)
 		if (T != 0):
@@ -135,7 +131,7 @@ def destructive_interference_demo():
 	data = wf.readframes(CHUNK)
 	while len(data) > 0:
 		# read from file, convert to usable form
-		audio_data = np.fromstring(data, dtype=DTYPE)
+		audio_data = np.fromstring(data, dtype=np.int16)
 			
 		# split audio data into two channels & calculate anti-signal
 		stereo_data = np.zeros([CHUNK,2])
@@ -145,7 +141,7 @@ def destructive_interference_demo():
 			stereo_data[i,1] = -audio_data[x] #right speaker
 		
 		# write audio data to output
-		out_data = np.array(stereo_data, dtype=DTYPE)
+		out_data = np.array(stereo_data, dtype=np.int16)
 		string_audio_data = out_data.tostring()
 		stream.write(string_audio_data, CHUNK)
 		
@@ -173,7 +169,7 @@ def debug_sine():
 			i+=1.0
 	
 		# write audio data to output
-		out_data = np.array(stereo_data, dtype=DTYPE)
+		out_data = np.array(stereo_data, dtype=np.int16)
 		string_audio_data = out_data.tostring()
 		stream.write(string_audio_data, CHUNK)
 	
