@@ -22,7 +22,6 @@ def main():
 	# optional -- add "plot" at end of command for visual plot
 	# "python Main.py di something.wav" = 2-speaker destructive interference demo
 	# "python Main.py sin" = test sine wave output
-	
 	if (sys.argv[1] == 'sin'): 
 		debug_sine()
 	elif (sys.argv[1] == 'di'): 
@@ -31,29 +30,16 @@ def main():
 		calculate() 
 		
 def calculate():
-	wf = wave.open(sys.argv[1], 'rb')
-
 	# begin audio stream
+	wf = wave.open(sys.argv[1], 'rb')
 	p = pyaudio.PyAudio()
 	stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),channels=2,rate=wf.getframerate(),output=True)
 		
-	energy_before = 0
-	energy_after = 0
-	# config - n_CHUNK, delay, sample_rate
-		
-	#TODO most-recent-frame
-	#TODO mean-average
-	#TODO weighted-average (linear)
-	
-	#TODO negative-feedback mechanism
-	#TODO output delay?
-	#TODO plot energy over time
-	
 	# config
+	linear_interpolate = True
 	anti_signal_strength = 0.75
-	n_averaging_set = 2
+	n_averaging_set = 3
 	delay = 1
-	#MRF = (0.75,2,1) = (0.789)
 	
 	# vars
 	plot_data = []
@@ -61,8 +47,12 @@ def calculate():
 	plot_inv = []
 	delayed_data = []
 	averaging_set = []
+	energy_before = 0
+	energy_after = 0	
 	data = wf.readframes(CHUNK)
 	T = delay #hacky fix
+	
+	#todo:negative feedback 
 	
 	# initialize
 	for i in range(delay):
@@ -90,10 +80,21 @@ def calculate():
 		# synthesize anti-signal (phase-shift by 180 degrees)
 		AVG_FFT = np.zeros(CHUNK, dtype=complex)
 		for i in range(len(averaging_set)):
+			if (linear_interpolate):
+				for j in range(CHUNK):
+					AVG_FFT[j] += averaging_set[i][j] * ((i+1)/(len(averaging_set)+1))
+			else:
+				for j in range(CHUNK):
+					AVG_FFT[j] += averaging_set[i][j]
+		if (linear_interpolate):
+			s = 0
+			for i in range(len(averaging_set)):
+				s += ((i+1)/(len(averaging_set)+1))
 			for j in range(CHUNK):
-				AVG_FFT[j] += averaging_set[i][j]
-		for j in range(CHUNK):
-			AVG_FFT[j] = AVG_FFT[j] / len(averaging_set)
+				AVG_FFT[j] = AVG_FFT[j] / s
+		else:
+			for j in range(CHUNK):
+				AVG_FFT[j] = AVG_FFT[j] / len(averaging_set)
 		fin_freq = np.zeros(CHUNK, dtype=complex)
 		for i in range(len(AVG_FFT)):
 			angle = np.angle(AVG_FFT[i])
