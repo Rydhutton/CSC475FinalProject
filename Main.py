@@ -134,7 +134,6 @@ def calculate():
 		wav_data = np.fromstring(data, dtype=DTYPE) / MAX
 		for i in range(int(len(wav_data)/2)):
 			raw_data[i] = wav_data[i*2]
-		print(raw_data[0])
 			
 		# extract frequency data
 		FFT_data = np.fft.fft(raw_data)
@@ -165,8 +164,8 @@ def calculate():
 				if (a!=0): #hacky fix to "trailing zeros" problem
 					energy_before += abs(a)
 					energy_after += abs(a+b)
-			else:
-				T -= 1
+		if (T != 0):
+			T -= 1
 		data = wf.readframes(CHUNK)
 		
 	print('energy ratio:'+str(energy_after/energy_before))
