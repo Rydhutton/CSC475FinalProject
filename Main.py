@@ -15,7 +15,6 @@ DTYPE = np.int16
 
 def main():
 	# determine launch context
-	
 	if (sys.argv[1] == 'plot'): # usage = "python Main.py plot something.wav"
 		plot()
 	elif (sys.argv[1] == 'sin'): # usage = "python Main.py sin"
@@ -91,14 +90,15 @@ def plot():
 	energy_before = 0
 	energy_after = 0
 	lastFFT = None
+	
 	#TODO use averages 
 	#TODO plot energy over time
 	
 	# read data from wav file
 	plot_data = []
-	plot_inv = []
 	plot_sum = []
 	data = wf.readframes(CHUNK)
+	c = 0
 	while len(data) > 0:
 	
 		# read from file, convert to usable form
@@ -113,7 +113,6 @@ def plot():
 			a = audio_data[i] # actual 
 			b = -synth[i] * 1.0
 			plot_data.append(a)	
-			plot_inv.append(-synth[i])
 			plot_sum.append(a+b)
 			if (lastFFT==None):
 				eatpoo = True
@@ -122,9 +121,11 @@ def plot():
 				energy_after += abs(a+b)
 		
 		# fetch new audio data
+		c += 1
 		lastFFT = np.fft.fft(audio_data)
 		data = wf.readframes(CHUNK)
 		
+	print(c)
 	print('energy ratio:'+str(energy_after/energy_before))
 		
 	# cleanup
@@ -134,7 +135,7 @@ def plot():
 		
 	# plot result
 	plt.figure(figsize=(15,4))
-	plt.plot(plot_data, 'r', plot_sum, 'b', plot_inv, 'y')#, plot_inv, 'y'
+	plt.plot(plot_data, 'r', plot_sum, 'b')#, plot_inv, 'y'
 	plt.show()
 	
 if __name__ == "__main__":
