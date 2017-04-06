@@ -87,7 +87,7 @@ def calculate():
 		if (len(averaging_set) > n_averaging_set):
 			averaging_set.pop(0)
 			
-		# synthesize anti-signal (phase-shift)
+		# synthesize anti-signal (phase-shift by 180 degrees)
 		AVG_FFT = np.zeros(CHUNK, dtype=complex)
 		for i in range(len(averaging_set)):
 			for j in range(CHUNK):
