@@ -9,8 +9,11 @@ import numpy as np
 import math
 from scipy import *
 
-#CHUNK = 8192
-CHUNK = 16384
+#CHUNK = 4096
+CHUNK = 8192
+#CHUNK = 16384
+#CHUNK = 32768
+#CHUNK = 65536
 MAX = 32768.0
 
 def main():
@@ -36,7 +39,6 @@ def calculate():
 		
 	energy_before = 0
 	energy_after = 0
-	mrf_FFT = None
 	# config - n_CHUNK, delay, sample_rate
 		
 	#TODO most-recent-frame
@@ -48,13 +50,15 @@ def calculate():
 	#TODO plot energy over time
 	
 	# config
-	anti_signal_strength = 1.0
-	n_averaging_set = 1
+	anti_signal_strength = 0.75
+	n_averaging_set = 2
 	delay = 1
+	#MRF = (0.75,2,1) = (0.789)
 	
 	# vars
 	plot_data = []
 	plot_sum = []
+	plot_inv = []
 	delayed_data = []
 	averaging_set = []
 	data = wf.readframes(CHUNK)
@@ -83,26 +87,34 @@ def calculate():
 		if (len(averaging_set) > n_averaging_set):
 			averaging_set.pop(0)
 			
-		# synthesize anti-signal
+		# synthesize anti-signal (phase-shift)
 		AVG_FFT = np.zeros(CHUNK, dtype=complex)
 		for i in range(len(averaging_set)):
 			for j in range(CHUNK):
 				AVG_FFT[j] += averaging_set[i][j]
 		for j in range(CHUNK):
 			AVG_FFT[j] = AVG_FFT[j] / len(averaging_set)
-		synth = np.fft.ifft(AVG_FFT)
+		fin_freq = np.zeros(CHUNK, dtype=complex)
+		for i in range(len(AVG_FFT)):
+			angle = np.angle(AVG_FFT[i])
+			mag = np.abs( AVG_FFT[i] )
+			angle = angle + (math.pi) # phase shift waveforms
+			fin_freq[i] = (math.cos(angle) + (1j*math.sin(angle)))*mag
+		synth = np.fft.ifft(fin_freq)
 		
 		# calc results, fetch new audio data
 		for i in range(CHUNK):
 			a = raw_data[i]
-			b = -synth[i] * anti_signal_strength
+			b = synth[i] * anti_signal_strength
+			c = a+b
 			plot_data.append(a)	
-			plot_sum.append(a+b)
+			plot_inv.append(b)
+			plot_sum.append(c)
 			if (T == 0): 
 				if (a!=0): #hacky fix
 					energy_before += abs(a)
-					energy_after += abs(a+b)
-		if (T != 0):
+					energy_after += abs(c)
+		if (T > 0):
 			T -= 1
 		data = wf.readframes(CHUNK)
 		
@@ -114,10 +126,12 @@ def calculate():
 	p.terminate()	
 		
 	# plot result
+	zero = np.zeros(len(plot_data))
 	if (len(sys.argv) > 2):
 		if (sys.argv[2] == "plot"):
 			plt.figure(figsize=(15,4))
-			plt.plot(plot_data, 'b', plot_sum, 'r')
+			plt.plot(plot_data, 'b', plot_inv, 'r', zero, '#999999')
+			#plt.plot(plot_sum, '#bbbbff', plot_data, 'b', zero, '#999999')
 			plt.show()		
 		
 def destructive_interference_demo():
