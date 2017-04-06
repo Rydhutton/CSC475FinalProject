@@ -9,8 +9,8 @@ import numpy as np
 import math
 from scipy import *
 
-CHUNK = 8192
-#CHUNK = 16384
+#CHUNK = 8192
+CHUNK = 16384
 MAX = 32768.0
 DTYPE = np.int16
 
@@ -53,7 +53,7 @@ def calculate():
 	print (b)
 	
 	# config
-	n_averaging_set = 2
+	n_averaging_set = 1
 	delay = 1
 	
 	# vars
