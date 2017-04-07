@@ -119,6 +119,8 @@ def calculate():
 			if (chunk_intensity > last_chunk_intensity*(1+negative_feedback_threshold)):
 				anti_signal_strength -= negative_feedback_gain_rate
 			elif (chunk_intensity < last_chunk_intensity*(1-negative_feedback_threshold)):
+				anti_signal_strength -= negative_feedback_gain_rate
+			else:
 				anti_signal_strength += negative_feedback_gain_rate
 		last_chunk_intensity = chunk_intensity
 		if (T > 0):
