@@ -34,7 +34,6 @@ def calculate():
 	# config
 	negative_feedback = True
 	negative_feedback_threshold = 0.01
-	negative_feedback_delta = 0.02
 	negative_feedback_rate = negative_feedback_delta
 	linear_interpolate = True
 	anti_signal_strength = 0.79
@@ -118,10 +117,7 @@ def calculate():
 			chunk_intensity += abs(c)
 		if (negative_feedback):
 			if (chunk_intensity > last_chunk_intensity*(1+negative_feedback_threshold)):
-				negative_feedback_rate = -negative_feedback_delta
-			elif (chunk_intensity < last_chunk_intensity*(1-negative_feedback_threshold)):
-				negative_feedback_rate = negative_feedback_delta
-			
+				negative_feedback_rate = -negative_feedback_rate			
 			anti_signal_strength += negative_feedback_rate
 		last_chunk_intensity = chunk_intensity
 		if (T > 0):
